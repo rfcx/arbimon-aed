@@ -1,0 +1,12 @@
+
+{
+  "recording_uris": [
+    "project_1/site_506/2019/1/5C3A44E0.flac",
+    "project_1/site_506/2019/1/5C3A52F0.flac"],
+  "amplitude_threshold": 2,
+  "size_threshold": 100,
+  "filter_size": 10,
+  "winlen": 513,
+  "nfft": 513,
+  "noverlap": 256
+}
