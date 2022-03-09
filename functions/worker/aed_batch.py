@@ -1,18 +1,20 @@
 from aed_lib import *
-import h5py
 from db import connect
 import sqlalchemy as sqal
 import datetime as dt
 import time # testing
+import shutil
 
 session, engine, metadata = connect() # RDS connection
 
 recordings = sqal.Table('recordings', metadata, autoload=True, autoload_with=engine)
 aeds = sqal.Table('audio_event_detections_clustering', metadata, autoload=True, autoload_with=engine)
+playlist_aed = sqal.Table('playlist_aed', metadata, autoload=True, autoload_with=engine)
+jobs = sqal.Table('jobs', metadata, autoload=True, autoload_with=engine)
 
 FILT_PCTL = 0.95
 
-def handler(event):
+def handler(event, context):
 
     #--- user inputs
         # recording_id
@@ -21,32 +23,37 @@ def handler(event):
         # worker_id
         # amplitude threshold
         # filter size
-        # size threshold
+        # duration threshold
+        # bandwidth threshold
+        # area threshold
+        # playlist id
 
     rec_ids = [int(i) for i in np.sort(np.array(event['recording_id']))]
     proj_id = event['project_id']
     job_id = event['job_id']
+    plist_id = int(event['playlist_id'])
+    print(str(len(rec_ids)), ' recs to process.')
 
     # define variables
-    temp_dir = '/tmp/'
+    temp_dir = '/tmp/temp/'
     rec_dir = temp_dir+'/recordings/'
     image_dir = temp_dir+'/images'
     det_dir = temp_dir+'/detection_data/'
     feature_file_prefix = temp_dir+'/'+str(job_id)+'_'+str(event['worker_id'])
 
     #--- create temp directories
-    if not os.path.exists(temp_dir): ########################################################### delete
-        os.mkdir(temp_dir)
-        os.mkdir(rec_dir)
-        os.mkdir(image_dir)
-        os.mkdir(det_dir)
-    else:
+    if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
         os.mkdir(temp_dir)
         os.mkdir(rec_dir)
         os.mkdir(image_dir)
         os.mkdir(det_dir)
-
+    else:
+        os.mkdir(temp_dir)
+        os.mkdir(rec_dir)
+        os.mkdir(image_dir)
+        os.mkdir(det_dir)        
+            
     #--- find the recording URIs for downloading
     query = sqal.select([recordings.c.uri,
                          recordings.c.datetime]).where(recordings.columns.recording_id.in_(rec_ids)) \
@@ -58,51 +65,64 @@ def handler(event):
     rec_dts = [to_unitcirc(i) for i in rec_dts]
 
     #--- process recordings
-    for n, rec in enumerate(rec_uris[:1]):
+    unprocessed = 0
+    for n, rec in enumerate(rec_uris):
 
-        print(rec)
-
-        image_uri = 'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+'/png/'+str(rec_ids[n])+'/'
-
-        if not os.path.exists(image_dir+'/'+str(rec_ids[n])):
-            os.mkdir(image_dir+'/'+str(rec_ids[n]))
-
-        t0 = time.time()
-
-        #--- download recording and compute spectrogram
-        f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir);
-
-        #--- detect events
-        objs = find_events(S, f, t, event['Filter Size'][0], event['Filter Size'][1], FILT_PCTL, event['Amplitude Threshold'], event['Size Threshold'][0], event['Size Threshold'][1])
-        print(len(objs))
-
-        print(time.time() - t0)
-
-        #--- bulk insert audio events to db
-        result = session.execute(
-
-            aeds.insert(),
-
-            [{'job_id': int(job_id),
-              'recording_id': int(rec_ids[n]),
-              'time_min': float(t[ob[1].start]),
-              'time_max': float(t[ob[1].stop-1]),
-              'frequency_min': float(f[ob[0].start]),
-              'frequency_max': float(f[ob[0].stop-1]),
-              'aed_number': int(c),
-              'uri_image': image_uri+str(c)+'.png'
-             }
-
-             for c, ob in enumerate(objs)]
-
-        )
-        session.commit()
-
-        #--- compute audio event features
-        compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_file_prefix)
-
-        #--- store roi images
-        store_roi_images(S, objs, rec_ids[n], image_dir, image_uri)
+        try:
+            
+            image_uri = 'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+'/png/'+str(rec_ids[n])+'/'
+    
+            if not os.path.exists(image_dir+'/'+str(rec_ids[n])):
+                os.mkdir(image_dir+'/'+str(rec_ids[n]))
+    
+            t0 = time.time()
+    
+            #--- download recording and compute spectrogram
+            f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir);
+    
+            #--- detect events
+            objs = find_events(S, f, t,
+                                event['Filter Size'], 
+                                FILT_PCTL, 
+                                event['Amplitude Threshold'], 
+                                event['Bandwidth Threshold'], 
+                                event['Duration Threshold'],
+                                event['Area Threshold']
+            )
+            
+            if len(objs)>0:
+                
+                #--- bulk insert audio events to db
+                result = session.execute(
+        
+                    aeds.insert(),
+        
+                    [{'job_id': int(job_id),
+                      'recording_id': int(rec_ids[n]),
+                      'time_min': float(t[ob[1].start]),
+                      'time_max': float(t[ob[1].stop-1]),
+                      'frequency_min': float(f[ob[0].start]),
+                      'frequency_max': float(f[ob[0].stop-1]),
+                      'aed_number': int(c),
+                      'uri_image': image_uri+str(c)+'.png'
+                     }
+        
+                     for c, ob in enumerate(objs)]
+        
+                )
+                session.commit()
+        
+                #--- compute audio event features
+                compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_file_prefix)
+        
+                #--- store roi images
+                store_roi_images(S, objs, rec_ids[n], image_dir, image_uri)
+                    
+        except Exception as e:
+            print(e)
+            print('recording number: ',str(n))
+            print('recording: ',rec)
+            unprocessed+=1
 
     #--- query for aed_ids
     print('mapping ids...')
@@ -114,18 +134,43 @@ def handler(event):
     key_dict = dict({i[1:]:i[0] for i in result}) # dictionary mapping recording and aed_number to aed_key
 
     aed_ids = np.load(feature_file_prefix+'_ids.npy') # file contains ae recording ids and ae number
-    aed_ids = [key_dict[tuple(i)] for i in aed_ids]
+    aed_ids = [int(key_dict[tuple(i)]) for i in aed_ids]
     np.save(feature_file_prefix+'_ids.npy', aed_ids) # file now contains list of aed_ids from database
+    
+    #--- write to playlist_aeds
+    result = session.execute(
 
-    session.close()
+        playlist_aed.insert(),
+
+        [{
+            'playlist_id': plist_id,
+            'aed_id': aed_ids[c],
+         }
+         for c in range(len(aed_ids))]
+    )
+    session.commit()
 
     #--- upload to S3
     s3.Bucket(os.environ['WRITEBUCKET']).upload_file(feature_file_prefix+'_features.npy', 
                                                      'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_features.npy').split(temp_dir)[-1])
     s3.Bucket(os.environ['WRITEBUCKET']).upload_file(feature_file_prefix+'_ids.npy', 
                                                      'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_ids.npy').split(temp_dir)[-1])
-
-    shutil.rmtree(temp_dir)
+                                                     
+    if unprocessed/len(rec_ids) < 0.5:
+        print('updating job status')
+        upd = jobs.update(jobs.c.job_id==event['job_id']).values(progress=jobs.c.progress+1,
+                                                                 last_update=dt.datetime.now())
+        session.execute(upd)
+        session.commit()
+    else: # if >=50% of recordings in the batch could not be processed, change job state to an error
+        print('error: '+str(unprocessed*100/len(rec_ids))+'% of recordings could not be processed')
+        upd = jobs.update(jobs.c.job_id==event['job_id']).values(state='error',
+                                                                 remarks='At least 1 lambda could not process '+str(round(unprocessed*100/len(rec_ids)))+'% of recordings',
+                                                                 last_update=dt.datetime.now())
+        session.execute(upd)
+        session.commit()
+        
+    session.close()
 
     return {'status' : 200}
 

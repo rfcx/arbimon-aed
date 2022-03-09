@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 from npy_append_array import NpyAppendArray
 import soundfile as sf # for reading audio files
@@ -17,30 +16,30 @@ from math import sin, cos, pi
 s3 = boto3.resource('s3')
 
 
-def find_events(S, f, t, filt_height, filt_width, pctl, amp_thresh, freq_size_thresh, time_size_thresh):
-    
+def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration_thresh, area_thresh):
+
     # Detects audio events in a spectrogram. Returns a list of slices describing coordinates of events
     
-#     print('flatten')
     S = band_flatten(S)
 
-#     print('filter')
     S += -S.min()
     S *= (1.0/S.max())
-    Sfilt = skimage.filters.rank.percentile(skimage.util.img_as_ubyte(S), skimage.morphology.rectangle(filt_height, filt_width), p0=pctl)
+    
+    # Sfilt = skimage.filters.rank.percentile(skimage.util.img_as_ubyte(S), skimage.morphology.rectangle(filt_height, filt_width), p0=pctl)
+    Sfilt = skimage.filters.rank.percentile(skimage.util.img_as_ubyte(S), skimage.morphology.rectangle(int(filt_size/2), int(filt_size*5)), p0=pctl)
 
     # th = np.median(Sfilt.flatten())+amp_thresh*mad(Sfilt.flatten())
     th = np.median(Sfilt.flatten())+amp_thresh*np.std(Sfilt.flatten())
     mask = Sfilt > th
 
-#     print('find objs')
     labels, num_labels = scipy.ndimage.measurements.label(mask)
     objs = scipy.ndimage.measurements.find_objects(labels)
-
-#     print('discard')
-    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop-1]-f[objs[i][0].start])*(t[objs[i][1].stop-1]-t[objs[i][1].start]) >= (time_size_thresh*freq_size_thresh)]
+    
+    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop-1]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
+                                            (t[objs[i][1].stop-1]-t[objs[i][1].start])>=duration_thresh and \
+                                            (f[objs[i][0].stop-1]-f[objs[i][0].start])/1000*(t[objs[i][1].stop-1]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
-
+    
     return objs
 
 
@@ -52,13 +51,14 @@ def im_norm(x, trim=0.4):
 def store_roi_images(S, objs, rec_id, image_dir, image_uri):
     for c, ob in enumerate(objs):
         im = np.uint8(im_norm(-S[ob[0], ob[1]])*255)
+        im = np.flipud(im)
         im = Image.fromarray(im).convert('RGB')
         im.save(image_dir+'/tmp.png')
         s3.Bucket(os.environ['WRITEBUCKET']).upload_file(image_dir+'/tmp.png',
                                                          image_uri+str(c)+'.png')
 
         
-def download_and_get_spec(uri, bucket, rec_dir, winlen=256, nfft=256, noverlap=128):
+def download_and_get_spec(uri, bucket, rec_dir, winlen=1024, nfft=1024, noverlap=512):
 
     # Downloads a recording and computes spectrogram
 
@@ -82,9 +82,7 @@ def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
     #   <out_file_prefix>_features.npy
     #   <out_file_prefix>_ids.npy
 
-    print('saving features')
-    
-    block_features = np.zeros((len(objs), 581))
+    block_features = np.zeros((len(objs), 582))
     block_ids = np.zeros((len(objs), 2))
     for c, ob in enumerate(objs):
         roi = S[ob[0].start:ob[0].stop-1, ob[1].start:ob[1].stop-1]
@@ -95,7 +93,9 @@ def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
                                                   rec_dt[1],
                                                   f[ob[0].start],                  # low frequency
                                                   f[ob[0].stop-1],                 # high frequency
-                                                  t[ob[1].stop-1]-t[ob[1].start]   # duration
+                                                  t[ob[1].start],                  # start time
+                                                  t[ob[1].stop-1],                 # end time
+                                                  
                                                  ]),
                                         features
                                 ])
@@ -121,8 +121,7 @@ def band_flatten(X, percentile=50, divide=False):
     return np.apply_along_axis(fn, 1, X, band_medians)
 
 
-def read_audio_dev(path, mono=True, offset=0.0, duration=None,
-         dtype=np.float32):
+def read_audio_dev(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
 
     y = []
     e_status=0

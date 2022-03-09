@@ -24,6 +24,5 @@ def aws_secrets(secret_name):
     else:
         secret = base64.b64decode(get_secret_value_response['SecretBinary'])
     response = json.loads(secret)
-    print('Connection parameters obtained: ', response)
 
     return response
