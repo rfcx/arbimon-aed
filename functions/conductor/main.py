@@ -72,7 +72,9 @@ def driver(event, context):
     param_string = '{"Amplitude Threshold": '+str(float(event['Amplitude Threshold'])) + \
                    ', "Duration Threshold": '+str(event['Duration Threshold']) + \
                    ', "Bandwidth Threshold": '+str(event['Bandwidth Threshold']) + \
-                   ', "Filter Size": '+str(event['Filter Size']) + '}'
+                   ', "Area Threshold": '+str(event['Filter Size']) + \
+                   ', "Filter Size": '+str(event['Filter Size']) + \
+                   '}'
                         
     ins = job_params.insert().values(name=event['name'],
                                   project_id=proj_id,
@@ -116,6 +118,7 @@ def driver(event, context):
                                         "Amplitude Threshold":float(event['Amplitude Threshold']),
                                         "Duration Threshold":float(event['Duration Threshold']),
                                         "Bandwidth Threshold":float(event['Bandwidth Threshold']),
+                                        "Area Threshold":float(event['Area Threshold']),
                                         "Filter Size":int(event['Filter Size']),
                     }))
         if context.get_remaining_time_in_millis()<20000:
