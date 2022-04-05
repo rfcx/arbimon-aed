@@ -82,7 +82,7 @@ def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
     #   <out_file_prefix>_features.npy
     #   <out_file_prefix>_ids.npy
 
-    block_features = np.zeros((len(objs), 582))
+    block_features = np.zeros((len(objs), 583))
     block_ids = np.zeros((len(objs), 2))
     for c, ob in enumerate(objs):
         roi = S[ob[0].start:ob[0].stop-1, ob[1].start:ob[1].stop-1]
@@ -95,7 +95,7 @@ def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
                                                   f[ob[0].stop-1],                 # high frequency
                                                   t[ob[1].start],                  # start time
                                                   t[ob[1].stop-1],                 # end time
-                                                  
+                                                  rec_id,
                                                  ]),
                                         features
                                 ])
