@@ -1,0 +1,29 @@
+on:
+  push:
+    branches:
+      - staging
+jobs:
+  build-deploy-sieve:
+    runs-on: ubuntu-latest
+    # define variables specific to staging vs. production
+    env:
+      AWS_AUDIO_BUCKET_SIEVE: arbimon2
+      AWS_AUDIO_BUCKET_RFCX: rfcx-streams-staging
+      AWS_SECRET: DEV
+      ALIAS: staging
+    # deploy/update cloudformation stack
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: aws-actions/setup-sam@v1
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_SIEVE }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_SIEVE }}
+          aws-region: ${{ secrets.AWS_REGION_SIEVE }}
+      # fill template file variables related to job size and account
+      - run: envsubst < template_sieve.yaml > template.yaml 
+      # sam build 
+      - run: sam build -t template.yaml --use-container
+      # sam deploy
+      - run: sam deploy -t template.yaml --no-confirm-changeset --no-fail-on-empty-changeset --stack-name audio-event-detection --s3-bucket ${{ secrets.AWS_S3_BUCKET_SIEVE }} --region ${{ secrets.AWS_REGION_SIEVE }}
