@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Specification template describing your function.
+
+Resources:
+  conductor:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: main.driver
+      Runtime: python3.7
+      CodeUri: functions/conductor
+      AutoPublishAlias: ${ALIAS}
+      Description: Initiates audio event detection worker instances
+      MemorySize: 512
+      Timeout: 600
+      Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-0d6bbaa8d86af7842
+        SubnetIds:
+          - subnet-0c8a25e65ccd76b26
+          - subnet-0d5b504a641e86d5d
+      Environment:
+        Variables:
+          AWS_SECRET: ${AWS_SECRET}
+      Layers:
+        - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy:1
+  worker:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: aed_batch.handler
+      Runtime: python3.7
+      CodeUri: functions/worker
+      Description: Detects audio events in a batch of recordings
+      MemorySize: 1024
+      Timeout: 900
+      Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-0d6bbaa8d86af7842
+        SubnetIds:
+          - subnet-d27d898b
+          - subnet-d44d37b1
+          - subnet-00a2b628
+          - subnet-5163a926
+          - subnet-cf4c2ef5
+          - subnet-58c35054
+      Environment:
+        Variables:
+          AWS_SECRET: ${AWS_SECRET}
+          RECBUCKET: ${AWS_AUDIO_BUCKET_SIEVE}
+          WRITEBUCKET: ml-specs
+      Layers:
+        - arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python37-SciPy1x:115
+        - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy:1
+        - arn:aws:lambda:us-east-1:584765855847:layer:tm_layer:8
+        - arn:aws:lambda:us-east-1:584765855847:layer:libsndfile-slim:1
+        - arn:aws:lambda:us-east-1:584765855847:layer:soundfile:4
+
