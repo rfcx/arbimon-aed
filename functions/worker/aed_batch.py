@@ -17,7 +17,8 @@ FILT_PCTL = 0.95
 def handler(event, context):
 
     #--- user inputs
-        # recording_id
+        # worker_id
+        # recording_ids
         # project_id
         # job_id
         # worker_id
@@ -28,7 +29,9 @@ def handler(event, context):
         # area threshold
         # playlist id
 
-    rec_ids = [int(i) for i in np.sort(np.array(event['recording_id']))]
+    worker_id = event['worker_id']
+    rec_ids = event['recording_ids']
+    sample_rates = event['sample_rates']
     proj_id = event['project_id']
     job_id = event['job_id']
     plist_id = int(event['playlist_id'])

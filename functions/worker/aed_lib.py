@@ -48,14 +48,14 @@ def im_norm(x, trim=0.4):
     return (x-x.min())/(x.max()-x.min())*(1-trim)+(trim/2)
 
 
-def store_roi_images(S, objs, rec_id, image_dir, image_uri):
+def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
     for c, ob in enumerate(objs):
         im = np.uint8(im_norm(-S[ob[0], ob[1]])*255)
         im = np.flipud(im)
         im = Image.fromarray(im).convert('RGB')
         im.save(image_dir+'/tmp.png')
         s3.Bucket(os.environ['WRITEBUCKET']).upload_file(image_dir+'/tmp.png',
-                                                         image_uri+str(c)+'.png')
+                                                         image_uri+'_'+str(worker_id)+'_'+str(c)+'.png')
 
         
 def download_and_get_spec(uri, bucket, rec_dir, winlen=1024, nfft=1024, noverlap=512):
