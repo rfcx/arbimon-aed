@@ -19,7 +19,7 @@ def driver(event, context):
     
     # event stores:
     #   Playlist ID
-    #   Us ID
+    #   User ID
     #   AED job name
     #   Amplitude threshold
     #   Duration threshold

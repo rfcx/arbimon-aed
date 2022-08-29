@@ -12,8 +12,8 @@ def connect():
     host     = params.get('host')
     port     = str(params.get('port', '3306'))
     schema   = params.get('schema')
-    user     = 'tm_driver'
-    password = params.get('tm_driver_pwd')
+    user     = 'aed_conductor'
+    password = params.get('aed_conductor_pwd')
 
     if not all(params):
         raise Exception('Connection parameters invalid', [host, port, schema, user, password])
