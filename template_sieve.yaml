@@ -9,7 +9,7 @@ Resources:
       Handler: main.driver
       Runtime: python3.7
       CodeUri: functions/conductor
-      AutoPublishAlias: ${ALIAS}
+      # AutoPublishAlias: ${ALIAS}
       Description: Initiates audio event detection worker instances
       MemorySize: 512
       Timeout: 600
