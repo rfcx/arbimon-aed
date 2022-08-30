@@ -90,7 +90,7 @@ def driver(event, context):
     result = session.execute(ins)
 
 
-    for account in sorted(lits(set(rec_accts))):
+    for account in sorted(list(set(rec_accts))):
 
         # get recording IDs and sample rates for the current account
         rec_ids_acct = [rec_ids[i] for i in range(len(rec_accts)) if rec_accts[i]==account]
