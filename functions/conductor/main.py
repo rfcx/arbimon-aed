@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import boto3
 from db import connect
 import sqlalchemy as sqal
@@ -9,7 +10,21 @@ import time
 
 session, engine, metadata = connect() # RDS connection
 
-client = boto3.client('lambda')
+logger = logging.getLogger(__name__)
+
+sqs = boto3.resource('sqs')
+
+rfcx_assumed_role = boto3.client('sts').assume_role(
+    RoleArn="arn:aws:iam::887044485231:role/pm-worker-sieve-invoker",
+    RoleSessionName="tm_driver_AssumeRoleSession1"
+)
+
+rfcx_sqs = boto3.resource('sqs',
+    region_name = 'eu-west-1',
+    aws_access_key_id=rfcx_assumed_role['Credentials']['AccessKeyId'],
+    aws_secret_access_key=rfcx_assumed_role['Credentials']['SecretAccessKey'],
+    aws_session_token=rfcx_assumed_role['Credentials']['SessionToken']
+)
 
 # Function to break playlist into chunks
 def divide_chunks(l, n): 
