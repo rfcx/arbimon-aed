@@ -104,7 +104,8 @@ def driver(event, context):
                                   user_id=event['user_id'])
     result = session.execute(ins)
 
-
+    # launch workers for each AWS account in the playlist
+    worker_id = 0
     for account in sorted(list(set(rec_accts))):
 
         # get recording IDs and sample rates for the current account
