@@ -2,16 +2,15 @@ import os
 import json
 import logging
 import boto3
+from botocore.exceptions import ClientError
 from db import connect
 import sqlalchemy as sqal
 import datetime as dt
 import time
-# from statistics import mean # test
 
 session, engine, metadata = connect() # RDS connection
 
 logger = logging.getLogger(__name__)
-
 sqs = boto3.resource('sqs')
 
 rfcx_assumed_role = boto3.client('sts').assume_role(

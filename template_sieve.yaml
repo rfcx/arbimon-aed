@@ -23,6 +23,8 @@ Resources:
       Environment:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
+          SQS_QUEUE: audio-event-detection-staging
+          SQS_QUEUE_LARGE: audio-event-detection-staging-large
       Layers:
         - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy:1
   worker:
@@ -35,6 +37,14 @@ Resources:
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      Events:
+        SQS1:
+          Type: SQS
+          Properties:
+            Queue: ${QUEUE}
+            BatchSize: 1
       VpcConfig:
         SecurityGroupIds:
           - sg-0d6bbaa8d86af7842

@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     # define variables specific to staging vs. production
     env:
+      QUEUE: arn:aws:sqs:us-east-1:584765855847:audio-event-detection-staging
+      QUEUE_LARGE: arn:aws:sqs:us-east-1:584765855847:audio-event-detection-staging-large
       AWS_AUDIO_BUCKET_SIEVE: arbimon2
       AWS_AUDIO_BUCKET_RFCX: rfcx-streams-staging
       AWS_SECRET: DEV
