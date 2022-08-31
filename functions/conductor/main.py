@@ -159,7 +159,6 @@ def driver(event, context):
                                             "sample_rates": j,
                                             "project_id":proj_id,
                                             "job_id":job_id,
-                                            "worker_id":c,
                                             "playlist_id":event['playlist_id'],
                                             "Amplitude Threshold":float(event['Amplitude Threshold']),
                                             "Duration Threshold":float(event['Duration Threshold']),
