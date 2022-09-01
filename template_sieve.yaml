@@ -45,23 +45,14 @@ Resources:
           Properties:
             Queue: ${QUEUE}
             BatchSize: 1
-      VpcConfig:
-        SecurityGroupIds:
-          - sg-0d6bbaa8d86af7842
-        SubnetIds:
-          - subnet-d27d898b
-          - subnet-d44d37b1
-          - subnet-00a2b628
-          - subnet-5163a926
-          - subnet-cf4c2ef5
-          - subnet-58c35054
       Environment:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
           RECBUCKET: ${AWS_AUDIO_BUCKET_SIEVE}
           WRITEBUCKET: ml-specs
       Layers:
-        - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy_test:1
-        - arn:aws:lambda:us-east-1:584765855847:layer:scikit-image:9
+        - arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python37-SciPy1x:115
+        - arn:aws:lambda:us-east-1:584765855847:layer:scikit-image:15
         - arn:aws:lambda:us-east-1:584765855847:layer:libsndfile-slim:1
+        - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy_test:1
 
