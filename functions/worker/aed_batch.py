@@ -123,7 +123,7 @@ def handler(event, context):
                 compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_file_prefix)
         
                 #--- store roi images
-                store_roi_images(S, objs, rec_ids[n], image_dir, image_uri)
+                store_roi_images(S, objs, rec_ids[n], worker_id, image_dir, image_uri)
                     
         except Exception as e:
             print(e)
