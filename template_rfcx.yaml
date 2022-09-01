@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Specification template describing your function.
+
+Resources:
+  worker:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: aed_batch.handler
+      Runtime: python3.7
+      CodeUri: functions/worker
+      Description: Detects audio events in a batch of recordings
+      MemorySize: 1024
+      Timeout: 900
+      Role: arn:aws:iam::887044485231:role/SieveLambda
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      Events:
+        SQS1:
+          Type: SQS
+          Properties:
+            Queue: ${QUEUE}
+            BatchSize: 1
+      Environment:
+        Variables:
+          AWS_SECRET: ${AWS_SECRET}
+          RECBUCKET: ${AWS_AUDIO_BUCKET_SIEVE}
+          WRITEBUCKET: ml-specs
+      Layers:
+        - arn:aws:lambda:eu-west-1:399891621064:layer:AWSLambda-Python37-SciPy1x:115
+        - arn:aws:lambda:eu-west-1:887044485231:layer:sqlalchemy:1
+        - arn:aws:lambda:eu-west-1:887044485231:layer:libsndfile-slim:1
+        - arn:aws:lambda:eu-west-1:887044485231:layer:scikit-image:1
+      ReservedConcurrentExecutions: 100
+  workerLarge:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: aed_batch.handler
+      Runtime: python3.7
+      CodeUri: functions/worker
+      Description: Detects audio events in a batch of recordings
+      MemorySize: 1024
+      Timeout: 900
+      Role: arn:aws:iam::887044485231:role/SieveLambda
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      Events:
+        SQS1:
+          Type: SQS
+          Properties:
+            Queue: ${QUEUE_LARGE}
+            BatchSize: 1
+      Environment:
+        Variables:
+          AWS_SECRET: ${AWS_SECRET}
+          RECBUCKET: ${AWS_AUDIO_BUCKET_SIEVE}
+          WRITEBUCKET: ml-specs
+      Layers:
+        - arn:aws:lambda:eu-west-1:399891621064:layer:AWSLambda-Python37-SciPy1x:115
+        - arn:aws:lambda:eu-west-1:887044485231:layer:sqlalchemy:1
+        - arn:aws:lambda:eu-west-1:887044485231:layer:libsndfile-slim:1
+        - arn:aws:lambda:eu-west-1:887044485231:layer:scikit-image:1
+      ReservedConcurrentExecutions: 100
+

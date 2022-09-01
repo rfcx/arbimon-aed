@@ -120,9 +120,9 @@ def driver(event, context):
     
         # Assign 10% of playlist to each item, with a limit per item
         if max(rec_srs_acct)<200000:
-            limit = 300
+            limit = 125
         else:
-            limit = 150
+            limit = 62
         mean_sr = sum(rec_srs_acct)/len(rec_srs_acct)
 
         print('\tDividing chunks...')
