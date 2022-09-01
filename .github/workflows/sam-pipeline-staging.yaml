@@ -39,7 +39,6 @@ jobs:
       AWS_AUDIO_BUCKET_RFCX: rfcx-streams-staging
       AWS_SECRET: DEV
       ALIAS: staging
-    # deploy/update cloudformation stack
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -50,7 +49,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_RFCX }}
           aws-region: ${{ secrets.AWS_REGION_RFCX }}
       # fill template file variables related to job size and account
-      - run: envsubst < template_sieve.yaml > template.yaml 
+      - run: envsubst < template_rfcx.yaml > template.yaml 
       # sam build 
       - run: sam build -t template.yaml --use-container
       # sam deploy
