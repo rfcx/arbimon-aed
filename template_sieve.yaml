@@ -6,14 +6,16 @@ Resources:
   conductor:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Initiates audio event detection worker instances
       Handler: main.driver
       Runtime: python3.7
       CodeUri: functions/conductor
-      # AutoPublishAlias: ${ALIAS}
-      Description: Initiates audio event detection worker instances
+      AutoPublishAlias: ${ALIAS}
       MemorySize: 512
       Timeout: 600
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
       VpcConfig:
         SecurityGroupIds:
           - sg-0d6bbaa8d86af7842
@@ -30,10 +32,11 @@ Resources:
   worker:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Detects audio events in a batch of recordings
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      Description: Detects audio events in a batch of recordings
+      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
@@ -59,10 +62,11 @@ Resources:
   workerLarge:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Detects audio events in a batch of recordings
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      Description: Detects audio events in a batch of recordings
+      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda

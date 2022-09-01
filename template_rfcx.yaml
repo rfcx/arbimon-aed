@@ -6,10 +6,11 @@ Resources:
   worker:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Detects audio events in a batch of recordings
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      Description: Detects audio events in a batch of recordings
+      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::887044485231:role/SieveLambda
@@ -35,10 +36,11 @@ Resources:
   workerLarge:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Detects audio events in a batch of recordings
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      Description: Detects audio events in a batch of recordings
+      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::887044485231:role/SieveLambda
