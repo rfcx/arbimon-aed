@@ -14,6 +14,7 @@ jobs = sqal.Table('jobs', metadata, autoload=True, autoload_with=engine)
 
 FILT_PCTL = 0.95
 
+
 def handler(event, context):
 
     #--- user inputs
