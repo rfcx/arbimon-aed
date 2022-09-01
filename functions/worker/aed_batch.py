@@ -4,6 +4,7 @@ import sqlalchemy as sqal
 import datetime as dt
 import time # testing
 import shutil
+import ast
 
 session, engine, metadata = connect() # RDS connection
 
