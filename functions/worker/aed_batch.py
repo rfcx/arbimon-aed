@@ -30,6 +30,8 @@ def handler(event, context):
         # area threshold
         # playlist id
 
+    event = ast.literal_eval(event['Records'][0]["body"])
+
     worker_id = event['worker_id']
     rec_ids = event['recording_ids']
     sample_rates = event['sample_rates']

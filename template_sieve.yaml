@@ -7,7 +7,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Initiates audio event detection worker instances
-      Handler: main.driver
+      Handler: main.handler
       Runtime: python3.7
       CodeUri: functions/conductor
       AutoPublishAlias: ${ALIAS}
