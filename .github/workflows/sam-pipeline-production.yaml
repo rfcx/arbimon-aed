@@ -28,7 +28,7 @@ jobs:
       # sam build 
       - run: sam build -t template.yaml --use-container
       # sam deploy
-      - run: sam deploy -t template.yaml --no-confirm-changeset --no-fail-on-empty-changeset --stack-name audio-event-detection --s3-bucket ${{ secrets.AWS_S3_BUCKET_SIEVE }} --region ${{ secrets.AWS_REGION_SIEVE }}
+      - run: sam deploy -t template.yaml --no-confirm-changeset --no-fail-on-empty-changeset --stack-name audio-event-detection-production --s3-bucket ${{ secrets.AWS_S3_BUCKET_SIEVE }} --region ${{ secrets.AWS_REGION_SIEVE }}
   build-deploy-rfcx:
     runs-on: ubuntu-latest
     # define variables specific to staging vs. production
@@ -53,4 +53,4 @@ jobs:
       # sam build 
       - run: sam build -t template.yaml --use-container
       # sam deploy
-      - run: sam deploy -t template.yaml --no-confirm-changeset --no-fail-on-empty-changeset --stack-name audio-event-detection --s3-bucket ${{ secrets.AWS_S3_BUCKET_RFCX }} --region ${{ secrets.AWS_REGION_RFCX }}
+      - run: sam deploy -t template.yaml --no-confirm-changeset --no-fail-on-empty-changeset --stack-name audio-event-detection-production --s3-bucket ${{ secrets.AWS_S3_BUCKET_RFCX }} --region ${{ secrets.AWS_REGION_RFCX }}
