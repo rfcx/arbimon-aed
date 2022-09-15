@@ -10,7 +10,6 @@ Resources:
       Handler: main.handler
       Runtime: python3.7
       CodeUri: functions/conductor
-      AutoPublishAlias: ${ALIAS}
       MemorySize: 512
       Timeout: 600
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
@@ -36,7 +35,6 @@ Resources:
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda
@@ -66,7 +64,6 @@ Resources:
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::584765855847:role/service-role/SieveLambda

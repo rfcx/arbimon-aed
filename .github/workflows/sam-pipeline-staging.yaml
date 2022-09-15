@@ -12,7 +12,6 @@ jobs:
       AWS_AUDIO_BUCKET_SIEVE: arbimon2
       AWS_AUDIO_BUCKET_RFCX: rfcx-streams-staging
       AWS_SECRET: DEV
-      ALIAS: staging
     # deploy/update cloudformation stack
     steps:
       - uses: actions/checkout@v2
@@ -38,7 +37,6 @@ jobs:
       AWS_AUDIO_BUCKET_SIEVE: arbimon2
       AWS_AUDIO_BUCKET_RFCX: rfcx-streams-staging
       AWS_SECRET: DEV
-      ALIAS: staging
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

@@ -10,7 +10,6 @@ Resources:
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::887044485231:role/SieveLambda
@@ -40,7 +39,6 @@ Resources:
       Handler: aed_batch.handler
       Runtime: python3.7
       CodeUri: functions/worker
-      AutoPublishAlias: ${ALIAS}
       MemorySize: 1024
       Timeout: 900
       Role: arn:aws:iam::887044485231:role/SieveLambda
