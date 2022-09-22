@@ -154,11 +154,11 @@ def handler(event, context):
         print(time.time() - t0)
 
         print('\tQueueing '+str(len(rec_ids_acct))+' items...')
-        for (i,j,k,l) in zip(rec_ids_acct, rec_srs_acct, rec_uris_acct):
+        for (i,j,k) in zip(rec_ids_acct, rec_srs_acct, rec_uris_acct):
             send_message(queue, json.dumps({"worker_id":worker_id,
                                             "rec_ids": i,
                                             "rec_srs": j,
-                                            "rec_uris": l,
+                                            "rec_uris": k,
                                             "project_id":proj_id,
                                             "job_id":job_id,
                                             "playlist_id":event['playlist_id'],
