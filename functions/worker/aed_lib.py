@@ -1,4 +1,5 @@
 import os
+import subprocess
 import numpy as np
 from npy_append_array import NpyAppendArray
 import soundfile as sf # for reading audio files
@@ -66,8 +67,6 @@ def download_and_get_spec(uri, bucket, rec_dir, sr, winlen=1024, nfft=1024, nove
 
     # Load recording
     data, samplerate = read_audio(uri, rec_dir, sr)
-    if read_err:
-        print('Warning: Ran into an unreadable block. File partially read')
 
     # Compute spectrogram
     f, t, S = spectrogram(data, samplerate, window=hann(winlen), nfft=nfft, noverlap=noverlap)
