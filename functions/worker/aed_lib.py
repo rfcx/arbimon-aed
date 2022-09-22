@@ -81,7 +81,7 @@ def compute_features(objs, rec_id, S, f, t, out_file_prefix):
     #   <out_file_prefix>_features.npy
     #   <out_file_prefix>_ids.npy
 
-    block_features = np.zeros((len(objs), 583))
+    block_features = np.zeros((len(objs), 581))
     block_ids = np.zeros((len(objs), 2))
     for c, ob in enumerate(objs):
         roi = S[ob[0].start:ob[0].stop-1, ob[1].start:ob[1].stop-1]
