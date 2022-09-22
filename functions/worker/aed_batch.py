@@ -6,7 +6,7 @@ import time # testing
 import shutil
 import ast
 
-session, engine, metadata = connect() # RDS connection
+session, engine, metadata = connect() # RDS connection 
 
 aeds = sqal.Table('audio_event_detections_clustering', metadata, autoload=True, autoload_with=engine)
 playlist_aed = sqal.Table('playlist_aed', metadata, autoload=True, autoload_with=engine)
