@@ -80,7 +80,7 @@ Resources:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
           RECBUCKET: ${AWS_AUDIO_BUCKET_SIEVE}
-          WRITEBUCKET: arbimon2
+          WRITEBUCKET: ml-specs
       Layers:
         - arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python37-SciPy1x:115
         - arn:aws:lambda:us-east-1:584765855847:layer:scikit-image:15
