@@ -35,7 +35,7 @@ Resources:
       ReservedConcurrentExecutions: 100
   workerLarge:
     Type: AWS::Serverless::Function
-    Properties:
+    Properties: 
       Description: Detects audio events in a batch of recordings
       Handler: aed_batch.handler
       Runtime: python3.7
