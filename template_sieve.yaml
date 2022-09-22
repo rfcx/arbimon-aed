@@ -56,6 +56,7 @@ Resources:
         - arn:aws:lambda:us-east-1:584765855847:layer:scikit-image:15
         - arn:aws:lambda:us-east-1:584765855847:layer:libsndfile-slim:1
         - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy_test:1
+        - arn:aws:lambda:us-east-1:584765855847:layer:opus-tools:2
       ReservedConcurrentExecutions: 100
   workerLarge:
     Type: AWS::Serverless::Function
@@ -85,5 +86,6 @@ Resources:
         - arn:aws:lambda:us-east-1:584765855847:layer:scikit-image:15
         - arn:aws:lambda:us-east-1:584765855847:layer:libsndfile-slim:1
         - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy_test:1
+        - arn:aws:lambda:us-east-1:584765855847:layer:opus-tools:2
       ReservedConcurrentExecutions: 100
 

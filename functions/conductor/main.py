@@ -64,12 +64,14 @@ def handler(event, context):
     j = plist_recs.join(recordings, recordings.c.recording_id == plist_recs.c.recording_id)
     query = sqal.select([plist_recs.c.recording_id,
                          recordings.c.sample_rate,
-                         recordings.c.uri]).select_from(j).where(plist_recs.c.playlist_id==event['playlist_id'])
+                         recordings.c.uri,
+                         recordings.c.datetime]).select_from(j).where(plist_recs.c.playlist_id==event['playlist_id'])
     result = session.execute(query).fetchall()
     rec_ids = [i[0] for i in result]
     rec_srs = [i[1] for i in result] # sample rate
     rec_uris = [i[2] for i in result]
     rec_accts = [0 if i.startswith('project_') else 1 for i in rec_uris]
+    rec_dts = [i[3] for i in result]
 
     # # Insert new job
     ins = jobs.insert().values(job_type_id=8,
@@ -111,10 +113,11 @@ def handler(event, context):
         # get recording IDs and sample rates for the current account
         rec_ids_acct = [rec_ids[i] for i in range(len(rec_accts)) if rec_accts[i]==account]
         rec_srs_acct = [rec_srs[i] for i in range(len(rec_accts)) if rec_accts[i]==account]
-
+        rec_dts_acct = [rec_dts[i] for i in range(len(rec_accts)) if rec_accts[i]==account]
+        rec_uris_acct = [rec_uris[i] for i in range(len(rec_accts)) if rec_accts[i]==account]
 
         print('\tSorting list by sample rate...')
-        rec_srs_acct, rec_ids_acct = zip(*sorted(zip(rec_srs_acct, rec_ids_acct)))
+        rec_srs_acct, rec_ids_acct, rec_dts_acct, rec_uris_acct = zip(*sorted(zip(rec_srs_acct, rec_ids_acct, rec_dts_acct, rec_uris_acct)))
         print(time.time() - t0)
 
     
@@ -129,6 +132,8 @@ def handler(event, context):
         recs_per_item = min(max(int(len(rec_ids_acct)*0.1),1),limit)
         rec_ids_acct = list(divide_chunks(rec_ids_acct, recs_per_item))
         rec_srs_acct = list(divide_chunks(rec_srs_acct, recs_per_item))
+        rec_dts_acct = list(divide_chunks(rec_dts_acct, recs_per_item))
+        rec_uris_acct = list(divide_chunks(rec_uris_acct, recs_per_item))
 
         # determine queue
         if os.environ.get('AWS_SECRET')=='PROD':
@@ -153,10 +158,12 @@ def handler(event, context):
         print(time.time() - t0)
 
         print('\tQueueing '+str(len(rec_ids_acct))+' items...')
-        for (i,j) in zip(rec_ids_acct, rec_srs_acct):
+        for (i,j,k,l) in zip(rec_ids_acct, rec_srs_acct, rec_dts_acct, rec_uris_acct):
             send_message(queue, json.dumps({"worker_id":worker_id,
-                                            "recording_ids": i,
-                                            "sample_rates": j,
+                                            "rec_ids": i,
+                                            "rec_srs": j,
+                                            "rec_dts": k,
+                                            "rec_uris": l,
                                             "project_id":proj_id,
                                             "job_id":job_id,
                                             "playlist_id":event['playlist_id'],

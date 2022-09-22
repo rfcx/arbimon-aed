@@ -58,14 +58,14 @@ def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
                                                          image_uri+'_'+str(worker_id)+'_'+str(c)+'.png')
 
         
-def download_and_get_spec(uri, bucket, rec_dir, winlen=1024, nfft=1024, noverlap=512):
+def download_and_get_spec(uri, bucket, rec_dir, sr, winlen=1024, nfft=1024, noverlap=512):
 
     # Downloads a recording and computes spectrogram
 
     s3.Bucket(bucket).download_file(uri, rec_dir + uri.replace('/','_'))
 
     # Load recording
-    data, samplerate, read_err = read_audio_dev(rec_dir + uri.replace('/','_'))
+    data, samplerate = read_audio(uri, rec_dir, sr)
     if read_err:
         print('Warning: Ran into an unreadable block. File partially read')
 
@@ -121,7 +121,26 @@ def band_flatten(X, percentile=50, divide=False):
     return np.apply_along_axis(fn, 1, X, band_medians)
 
 
-def read_audio_dev(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
+def read_audio(uri, rec_dir, sample_rate):
+
+    i = uri.replace('/','_')
+        
+    if uri.split('.')[-1] == 'opus':
+        process = subprocess.Popen(['/opt/exodus/bundles/e4572ada66bc59e727a83ddabea44280afc8a72dbbb36d9aa1e7f043c2104c63/usr/bin/opusdec', rec_dir+i, rec_dir+i.replace('.opus', '.wav'), '--rate', str(sample_rate)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        # print(out)
+        # print(err)
+        i = i.replace('.opus', '.wav')
+
+    # Load recording
+    data, samplerate, read_err = _read_audio(rec_dir+i)
+    if read_err:
+        print('Warning: Ran into an unreadable block. File partially read')
+        
+    return data, samplerate
+
+
+def _read_audio(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
 
     y = []
     e_status=0

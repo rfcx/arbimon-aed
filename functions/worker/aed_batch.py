@@ -8,7 +8,6 @@ import ast
 
 session, engine, metadata = connect() # RDS connection
 
-recordings = sqal.Table('recordings', metadata, autoload=True, autoload_with=engine)
 aeds = sqal.Table('audio_event_detections_clustering', metadata, autoload=True, autoload_with=engine)
 playlist_aed = sqal.Table('playlist_aed', metadata, autoload=True, autoload_with=engine)
 jobs = sqal.Table('jobs', metadata, autoload=True, autoload_with=engine)
@@ -34,8 +33,10 @@ def handler(event, context):
     event = ast.literal_eval(event['Records'][0]["body"])
 
     worker_id = event['worker_id']
-    rec_ids = event['recording_ids']
-    sample_rates = event['sample_rates']
+    rec_ids = event['rec_ids']
+    rec_srs = event['rec_srs']
+    rec_dts = event['rec_dts']
+    rec_uris = event['rec_uris']
     proj_id = event['project_id']
     job_id = event['job_id']
     plist_id = int(event['playlist_id'])
@@ -59,17 +60,11 @@ def handler(event, context):
         os.mkdir(temp_dir)
         os.mkdir(rec_dir)
         os.mkdir(image_dir)
-        os.mkdir(det_dir)        
-            
-    #--- find the recording URIs for downloading
-    query = sqal.select([recordings.c.uri,
-                         recordings.c.datetime]).where(recordings.columns.recording_id.in_(rec_ids)) \
-                        .order_by(recordings.c.recording_id)
-    result = session.execute(query).fetchall()
-    rec_uris = [i[0] for i in result]
-    rec_dts = [i[1] for i in result]
-    rec_dts = [(i.hour+i.minute/60)/24 for i in rec_dts] # convert datetime to fraction of day
-    rec_dts = [to_unitcirc(i) for i in rec_dts]
+        os.mkdir(det_dir)     
+
+    rec_dts_feature = [(i.hour+i.minute/60)/24 for i in rec_dts] # convert datetime to fraction of day
+    rec_dts_feature = [to_unitcirc(i) for i in rec_dts]   
+    
 
     #--- process recordings
     unprocessed = 0
@@ -85,7 +80,7 @@ def handler(event, context):
             t0 = time.time()
     
             #--- download recording and compute spectrogram
-            f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir);
+            f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
     
             #--- detect events
             objs = find_events(S, f, t,
@@ -120,7 +115,7 @@ def handler(event, context):
                 session.commit()
         
                 #--- compute audio event features
-                compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_file_prefix)
+                compute_features(objs, rec_ids[n], rec_dts_feature[n], S, f, t, feature_file_prefix)
         
                 #--- store roi images
                 store_roi_images(S, objs, rec_ids[n], worker_id, image_dir, image_uri)
