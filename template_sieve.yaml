@@ -24,8 +24,8 @@ Resources:
       Environment:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
-          SQS_QUEUE: audio-event-detection-staging
-          SQS_QUEUE_LARGE: audio-event-detection-staging-large
+          SQS_QUEUE: ${QUEUE}
+          SQS_QUEUE_LARGE: ${QUEUE_LARGE}
       Layers:
         - arn:aws:lambda:us-east-1:584765855847:layer:sqlalchemy:1
   worker:
