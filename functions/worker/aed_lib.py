@@ -76,7 +76,7 @@ def download_and_get_spec(uri, bucket, rec_dir, sr, winlen=1024, nfft=1024, nove
     return f, t, S
     
     
-def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
+def compute_features(objs, rec_id, S, f, t, out_file_prefix):
     
     # Computes features from audio events for a single recording and appends to two local files
     #   <out_file_prefix>_features.npy
@@ -89,9 +89,7 @@ def compute_features(objs, rec_id, rec_dt, S, f, t, out_file_prefix):
         roi = np.array(Image.fromarray(roi).resize((20, 20)))
         features = hog(roi, orientations=9, pixels_per_cell=(4, 4), cells_per_block=(2, 2))
         block_features[c,:] = np.hstack([
-                                        np.array([rec_dt[0],                       # time of day unit circle coordinates
-                                                  rec_dt[1],
-                                                  f[ob[0].start],                  # low frequency
+                                        np.array([f[ob[0].start],                  # low frequency
                                                   f[ob[0].stop-1],                 # high frequency
                                                   t[ob[1].start],                  # start time
                                                   t[ob[1].stop-1],                 # end time

@@ -35,7 +35,6 @@ def handler(event, context):
     worker_id = event['worker_id']
     rec_ids = event['rec_ids']
     rec_srs = event['rec_srs']
-    rec_dts = event['rec_dts']
     rec_uris = event['rec_uris']
     proj_id = event['project_id']
     job_id = event['job_id']
@@ -61,9 +60,6 @@ def handler(event, context):
         os.mkdir(rec_dir)
         os.mkdir(image_dir)
         os.mkdir(det_dir)     
-
-    rec_dts_feature = [(i.hour+i.minute/60)/24 for i in rec_dts] # convert datetime to fraction of day
-    rec_dts_feature = [to_unitcirc(i) for i in rec_dts]   
     
 
     #--- process recordings
@@ -115,7 +111,7 @@ def handler(event, context):
                 session.commit()
         
                 #--- compute audio event features
-                compute_features(objs, rec_ids[n], rec_dts_feature[n], S, f, t, feature_file_prefix)
+                compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix)
         
                 #--- store roi images
                 store_roi_images(S, objs, rec_ids[n], worker_id, image_dir, image_uri)
