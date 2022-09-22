@@ -138,17 +138,17 @@ def handler(event, context):
         if account==0:
             if len(rec_ids_acct)<=large_job_threshold and mean_sr<=192000:
                 print('using sieve normal queue...')
-                queue = get_queue(sqs, os.environ.get('SQS_QUEUE'))
+                queue = get_queue(sqs, os.environ.get('SQS_QUEUE').split(':')[-1])
             else:
                 print('using sieve large queue...')
-                queue = get_queue(sqs, os.environ.get('SQS_QUEUE_LARGE'))
+                queue = get_queue(sqs, os.environ.get('SQS_QUEUE_LARGE').split(':')[-1])
         elif account==1:
             if len(rec_ids_acct)<=large_job_threshold and mean_sr<=192000:
                 print('using rfcx normal queue...')
-                queue = get_queue(rfcx_sqs, os.environ.get('SQS_QUEUE')) # the queues have the same names in both accounts
+                queue = get_queue(rfcx_sqs, os.environ.get('SQS_QUEUE').split(':')[-1]) # the queues have the same names in both accounts
             else:
                 print('using rfcx large queue...')
-                queue = get_queue(rfcx_sqs, os.environ.get('SQS_QUEUE_LARGE'))
+                queue = get_queue(rfcx_sqs, os.environ.get('SQS_QUEUE_LARGE').split(':')[-1])
 
         print(time.time() - t0)
 
