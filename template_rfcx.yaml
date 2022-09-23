@@ -25,7 +25,7 @@ Resources:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
           RECBUCKET: ${AWS_AUDIO_BUCKET_RFCX}
-          WRITEBUCKET: ml-specs
+          WRITEBUCKET: arbimon2
       Layers:
         - arn:aws:lambda:eu-west-1:399891621064:layer:AWSLambda-Python37-SciPy1x:115
         - arn:aws:lambda:eu-west-1:887044485231:layer:sqlalchemy:1
@@ -55,7 +55,7 @@ Resources:
         Variables:
           AWS_SECRET: ${AWS_SECRET}
           RECBUCKET: ${AWS_AUDIO_BUCKET_RFCX}
-          WRITEBUCKET: ml-specs
+          WRITEBUCKET: arbimon2
       Layers:
         - arn:aws:lambda:eu-west-1:399891621064:layer:AWSLambda-Python37-SciPy1x:115
         - arn:aws:lambda:eu-west-1:887044485231:layer:sqlalchemy:1
