@@ -79,7 +79,7 @@ def handler(event, context):
             f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
     
             #--- detect events
-            objs = find_events(S, f, t,
+            objs, f = find_events(S, f, t,
                                 event['Filter Size'], 
                                 FILT_PCTL, 
                                 event['Amplitude Threshold'], 

@@ -44,7 +44,7 @@ def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration
                                             (f[objs[i][0].stop-1]-f[objs[i][0].start])/1000*(t[objs[i][1].stop-1]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
     
-    return objs
+    return objs, f
 
 
 def im_norm(x, trim=0.4):
