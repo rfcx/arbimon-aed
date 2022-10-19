@@ -167,6 +167,8 @@ def handler(event, context):
                                             "Bandwidth Threshold":float(event['Bandwidth Threshold']),
                                             "Area Threshold":float(event['Area Threshold']),
                                             "Filter Size":int(event['Filter Size']),
+                                            "Min Frequency":float(event['Min Frequency']),
+                                            "Max Frequency":float(event['Max Frequency'])
                         }))
                         
             worker_id += 1

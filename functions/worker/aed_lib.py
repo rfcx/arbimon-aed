@@ -17,10 +17,13 @@ from math import sin, cos, pi
 s3 = boto3.resource('s3')
 
 
-def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration_thresh, area_thresh):
+def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration_thresh, area_thresh, freq_range):
 
     # Detects audio events in a spectrogram. Returns a list of slices describing coordinates of events
     
+    S = S[(freq_range[0]<=f) & (f<=freq_range[0]), :]
+    f = f[(freq_range[0]<=f) & (f<=freq_range[0])]
+
     S = band_flatten(S)
 
     S += -S.min()

@@ -85,7 +85,8 @@ def handler(event, context):
                                 event['Amplitude Threshold'], 
                                 event['Bandwidth Threshold'], 
                                 event['Duration Threshold'],
-                                event['Area Threshold']
+                                event['Area Threshold'],
+                                [event['Min Frequency'], event['Max Frequency']]
             )
             
             if len(objs)>0:
