@@ -21,8 +21,8 @@ def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration
 
     # Detects audio events in a spectrogram. Returns a list of slices describing coordinates of events
     
-    S = S[(freq_range[0]<=f) & (f<=freq_range[1]), :]
-    f = f[(freq_range[0]<=f) & (f<=freq_range[1])]
+    S = S[((freq_range[0]*1000)<=f) & (f<=(freq_range[1]*1000)), :]
+    f = f[((freq_range[0]*1000)<=f) & (f<=(freq_range[1]*1000))]
 
     S = band_flatten(S)
 
