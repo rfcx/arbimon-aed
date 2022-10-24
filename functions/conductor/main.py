@@ -91,7 +91,7 @@ def handler(event, context):
     param_string = '{"Amplitude Threshold": '+str(float(event['Amplitude Threshold'])) + \
                    ', "Duration Threshold": '+str(event['Duration Threshold']) + \
                    ', "Bandwidth Threshold": '+str(event['Bandwidth Threshold']) + \
-                   ', "Area Threshold": '+str(event['Filter Size']) + \
+                   ', "Area Threshold": '+str(event['Area Threshold']) + \
                    ', "Filter Size": '+str(event['Filter Size']) + \
                    '}'
                         
