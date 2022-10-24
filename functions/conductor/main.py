@@ -93,6 +93,8 @@ def handler(event, context):
                    ', "Bandwidth Threshold": '+str(event['Bandwidth Threshold']) + \
                    ', "Area Threshold": '+str(event['Area Threshold']) + \
                    ', "Filter Size": '+str(event['Filter Size']) + \
+                   ', "Min Frequency": '+str(event['Min Frequency']) + \
+                   ', "Max Frequency": '+str(event['Max Frequency']) + \
                    '}'
                         
     ins = job_params.insert().values(name=event['name'],
