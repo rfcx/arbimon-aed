@@ -32,8 +32,7 @@ def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration
     # Sfilt = skimage.filters.rank.percentile(skimage.util.img_as_ubyte(S), skimage.morphology.rectangle(filt_height, filt_width), p0=pctl)
     Sfilt = skimage.filters.rank.percentile(skimage.util.img_as_ubyte(S), skimage.morphology.rectangle(int(filt_size/2), int(filt_size*5)), p0=pctl)
 
-    # th = np.median(Sfilt.flatten())+amp_thresh*mad(Sfilt.flatten())
-    th = np.median(Sfilt.flatten())+amp_thresh*np.std(Sfilt.flatten())
+    th = np.mean(Sfilt)+amp_thresh*np.std(Sfilt)
     mask = Sfilt > th
 
     labels, num_labels = scipy.ndimage.measurements.label(mask)
@@ -73,7 +72,7 @@ def download_and_get_spec(uri, bucket, rec_dir, sr, winlen=1024, nfft=1024, nove
 
     # Compute spectrogram
     f, t, S = spectrogram(data, samplerate, window=hann(winlen), nfft=nfft, noverlap=noverlap)
-    S = 10*np.log10((S+1e-12))
+    S = np.log10((S+1e-12))
     
     return f, t, S
     
