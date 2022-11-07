@@ -132,6 +132,14 @@ def handler(event, context):
     result = session.execute(query).fetchall()
     key_dict = dict({i[1:]:i[0] for i in result}) # dictionary mapping recording and aed_number to aed_key
 
+    if len(key_dict)==0: # if no AEDs were found, finish
+        print('updating job status')
+        upd = jobs.update(jobs.c.job_id==event['job_id']).values(progress=jobs.c.progress+1,
+                                                                 last_update=dt.datetime.now())
+        session.execute(upd)
+        session.commit()   
+        return {'status' : 200}
+
     aed_ids = np.load(feature_file_prefix+'_ids.npy') # file contains ae recording ids and ae number
     aed_ids = [int(key_dict[tuple(i)]) for i in aed_ids]
     np.save(feature_file_prefix+'_ids.npy', aed_ids) # file now contains list of aed_ids from database
