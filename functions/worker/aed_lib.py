@@ -165,7 +165,7 @@ def _read_audio(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
         if n_channels > 1:
             y = y.reshape((-1, n_channels)).T
             if mono:
-                y = to_mono(y)
+                y = y[0,:]
 
         else:
             sr = sr_native
@@ -174,3 +174,4 @@ def _read_audio(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
     y = np.ascontiguousarray(y, dtype=dtype)
 
     return y, sr, e_status
+
