@@ -144,7 +144,7 @@ def _read_audio(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
     y = []
     e_status=0
     with sf.SoundFile(os.path.realpath(path)) as input_file:
-        sr_native = input_file.samplerate
+        sr = input_file.samplerate
         n_channels = input_file.channels
 
         fileLen = len(input_file)
@@ -166,9 +166,6 @@ def _read_audio(path, mono=True, offset=0.0, duration=None, dtype=np.float32):
             y = y.reshape((-1, n_channels)).T
             if mono:
                 y = y[0,:]
-
-        else:
-            sr = sr_native
             
     # Final cleanup for dtype and contiguity
     y = np.ascontiguousarray(y, dtype=dtype)
