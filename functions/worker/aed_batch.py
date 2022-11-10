@@ -159,9 +159,11 @@ def handler(event, context):
 
     #--- upload to S3
     s3.Bucket(os.environ['WRITEBUCKET']).upload_file(feature_file_prefix+'_features.npy', 
-                                                     'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_features.npy').split(temp_dir)[-1])
+                                                     'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_features.npy').split(temp_dir)[-1],
+                                                     ExtraArgs={'ACL':'bucket-owner-full-control'})
     s3.Bucket(os.environ['WRITEBUCKET']).upload_file(feature_file_prefix+'_ids.npy', 
-                                                     'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_ids.npy').split(temp_dir)[-1])
+                                                     'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_ids.npy').split(temp_dir)[-1],
+                                                     ExtraArgs={'ACL':'bucket-owner-full-control'})
                                                      
     if unprocessed/len(rec_ids) < 0.5:
         print('updating job status')
