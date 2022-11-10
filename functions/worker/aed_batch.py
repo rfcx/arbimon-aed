@@ -134,7 +134,8 @@ def handler(event, context):
 
     if len(key_dict)==0: # if no AEDs were found, finish
         print('updating job status')
-        upd = jobs.update(jobs.c.job_id==event['job_id']).values(progress=jobs.c.progress+1,
+        upd = jobs.update(jobs.c.job_id==event['job_id']).values(state='processing',
+                                                                 progress=jobs.c.progress+1,
                                                                  last_update=dt.datetime.now())
         session.execute(upd)
         session.commit()   
@@ -167,7 +168,8 @@ def handler(event, context):
                                                      
     if unprocessed/len(rec_ids) < 0.5:
         print('updating job status')
-        upd = jobs.update(jobs.c.job_id==event['job_id']).values(progress=jobs.c.progress+1,
+        upd = jobs.update(jobs.c.job_id==event['job_id']).values(state='processing',
+                                                                 progress=jobs.c.progress+1,
                                                                  last_update=dt.datetime.now())
         session.execute(upd)
         session.commit()
