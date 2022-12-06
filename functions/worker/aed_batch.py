@@ -49,7 +49,7 @@ def handler(event, context):
     feature_file_prefix = temp_dir+'/'+str(job_id)+'_'+str(event['worker_id'])
 
     #--- create temp directories
-    if os.path.exists(temp_dir):
+    if os.path.exists(temp_dir): 
         shutil.rmtree(temp_dir)
         os.mkdir(temp_dir)
         os.mkdir(rec_dir)

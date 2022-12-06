@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import numpy as np
 from npy_append_array import NpyAppendArray
@@ -52,16 +53,30 @@ def im_norm(x, trim=0.4):
 
 
 def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
+    shutil.rmtree(image_dir)
+    os.makedirs(image_dir)
     for c, ob in enumerate(objs):
         im = np.uint8(im_norm(-S[ob[0], ob[1]])*255)
         im = np.flipud(im)
         im = Image.fromarray(im).convert('RGB')
-        im.save(image_dir+'/tmp.png')
-        s3.Bucket(os.environ['WRITEBUCKET']).upload_file(image_dir+'/tmp.png',
-                                                         image_uri+str(c)+'.png',
-                                                         ExtraArgs={'ACL':'bucket-owner-full-control'})
+        im.save(image_dir+'/'+str(c)+'.png')
+    fast_upload(boto3.Session(), os.environ['WRITEBUCKET'], image_uri, [image_dir+'/'+i for i in os.listdir(image_dir)])
 
+
+def fast_upload(session, bucketname, s3dir, filelist, workers=20):
+    botocore_config = botocore.config.Config(max_pool_connections=workers)
+    s3client = session.client('s3', config=botocore_config)
+    transfer_config = s3transfer.TransferConfig(
+        use_threads=True,
+        max_concurrency=workers,
+    )
+    s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
+    for src in filelist:
+        dst = os.path.join(s3dir, os.path.basename(src))
+        s3t.upload(src, bucketname, dst, subscribers=[], extra_args={'ACL':'bucket-owner-full-control'})
+    s3t.shutdown()  # wait for all the upload tasks to finish
         
+
 def download_and_get_spec(uri, bucket, rec_dir, sr, winlen=1024, nfft=1024, noverlap=512):
 
     # Downloads a recording and computes spectrogram

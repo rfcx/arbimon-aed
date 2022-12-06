@@ -122,9 +122,15 @@ def handler(event, context):
     
         # Assign 10% of playlist to each item, with a limit per item
         if max(rec_srs_acct)<200000:
-            limit = 125
+            if account==0: # sieve
+                limit = 125
+            else: # rfcx
+                limit = 100
         else:
-            limit = 62
+            if account==0: 
+                limit = 62
+            else:
+                limit = 50
         mean_sr = sum(rec_srs_acct)/len(rec_srs_acct)
 
         print('\tDividing chunks...')
