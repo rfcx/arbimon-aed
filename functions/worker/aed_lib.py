@@ -11,7 +11,8 @@ import skimage.util
 import skimage.morphology
 from skimage.feature import hog
 import boto3
-import time
+import botocore
+import boto3.s3.transfer as s3transfer
 from PIL import Image
 from math import sin, cos, pi
 # establish s3 connection
