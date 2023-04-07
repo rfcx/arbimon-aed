@@ -57,7 +57,7 @@ def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
     shutil.rmtree(image_dir)
     os.makedirs(image_dir)
     for c, ob in enumerate(objs):
-        im = np.uint8(im_norm(-S[ob[0], ob[1]])*255)
+        im = np.uint8(im_norm(-S[ob[0].start:(ob[0].stop+1), ob[1].start:(ob[1].stop+1)])*255)
         im = np.flipud(im)
         im = Image.fromarray(im).convert('RGB')
         im.save(image_dir+'/'+str(c)+'.png')
