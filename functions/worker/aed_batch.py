@@ -17,7 +17,7 @@ FILT_PCTL = 0.95
 
 def handler(event, context):
 
-    #--- user inputs
+    # user inputs
         # worker_id
         # recording_ids
         # project_id
@@ -48,7 +48,7 @@ def handler(event, context):
     det_dir = temp_dir+'/detection_data/'
     feature_file_prefix = temp_dir+'/'+str(job_id)+'_'+str(event['worker_id'])
 
-    #--- create temp directories
+    # create temp directories
     if os.path.exists(temp_dir): 
         shutil.rmtree(temp_dir)
         os.mkdir(temp_dir)
@@ -62,7 +62,7 @@ def handler(event, context):
         os.mkdir(det_dir)     
     
 
-    #--- process recordings
+    # process recordings
     unprocessed = 0
     for n, rec in enumerate(rec_uris):
 
@@ -75,10 +75,10 @@ def handler(event, context):
     
             t0 = time.time()
     
-            #--- download recording and compute spectrogram
+            # download recording and compute spectrogram
             f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
     
-            #--- detect events
+            # detect events
             objs, f = find_events(S, f, t,
                                 event['Filter Size'], 
                                 FILT_PCTL, 
@@ -91,7 +91,7 @@ def handler(event, context):
             
             if len(objs)>0:
                 
-                #--- bulk insert audio events to db
+                # bulk insert audio events to db
                 result = session.execute(
         
                     aeds.insert(),
@@ -111,10 +111,10 @@ def handler(event, context):
                 )
                 session.commit()
         
-                #--- compute audio event features
+                # compute audio event features
                 compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix)
         
-                #--- store roi images
+                # store roi images
                 store_roi_images(S, objs, rec_ids[n], worker_id, image_dir, image_uri)
                     
         except Exception as e:
@@ -123,7 +123,7 @@ def handler(event, context):
             print('recording: ',rec)
             unprocessed+=1
 
-    #--- query for aed_ids
+    # query for aed_ids
     print('mapping ids...')
     query = sqal.select([aeds.c.aed_id, \
                          aeds.c.recording_id, \
@@ -145,7 +145,7 @@ def handler(event, context):
     aed_ids = [int(key_dict[tuple(i)]) for i in aed_ids]
     np.save(feature_file_prefix+'_ids.npy', aed_ids) # file now contains list of aed_ids from database
     
-    #--- write to playlist_aeds
+    # write to playlist_aeds
     result = session.execute(
 
         playlist_aed.insert(),
@@ -158,7 +158,7 @@ def handler(event, context):
     )
     session.commit()
 
-    #--- upload to S3
+    # upload to S3
     s3.Bucket(os.environ['WRITEBUCKET']).upload_file(feature_file_prefix+'_features.npy', 
                                                      'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+(feature_file_prefix+'_features.npy').split(temp_dir)[-1],
                                                      ExtraArgs={'ACL':'bucket-owner-full-control'})
