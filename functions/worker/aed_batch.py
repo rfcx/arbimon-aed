@@ -66,61 +66,61 @@ def handler(event, context):
     unprocessed = 0
     for n, rec in enumerate(rec_uris):
 
-        try:
+        # try:
             
-            image_uri = 'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+'/png/'+str(rec_ids[n])+'/'
+        image_uri = 'audio_events/'+os.environ['AWS_SECRET'].lower()+'/detection/'+str(job_id)+'/png/'+str(rec_ids[n])+'/'
+
+        if not os.path.exists(image_dir+'/'+str(rec_ids[n])):
+            os.mkdir(image_dir+'/'+str(rec_ids[n]))
+
+        t0 = time.time()
+
+        # download recording and compute spectrogram
+        f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
+
+        # detect events
+        objs = find_events(S, f, t,
+                            event['Filter Size'], 
+                            FILT_PCTL, 
+                            event['Amplitude Threshold'], 
+                            event['Bandwidth Threshold'], 
+                            event['Duration Threshold'],
+                            event['Area Threshold'],
+                            [event['Min Frequency'], event['Max Frequency']]
+        )
+        print(len(objs))
+
+        if len(objs)>0:
+            
+            # bulk insert audio events to db
+            result = session.execute(
     
-            if not os.path.exists(image_dir+'/'+str(rec_ids[n])):
-                os.mkdir(image_dir+'/'+str(rec_ids[n]))
+                aeds.insert(),
     
-            t0 = time.time()
+                [{'job_id': int(job_id),
+                    'recording_id': int(rec_ids[n]),
+                    'time_min': float(ob['t0']),
+                    'time_max': float(ob['t1']),
+                    'frequency_min': float(ob['f0']),
+                    'frequency_max': float(ob['f1']),
+                    'aed_number': int(c),
+                    'uri_image': image_uri+str(c)+'.png'
+                    }
     
-            # download recording and compute spectrogram
-            f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
+                    for c, ob in enumerate(objs)]
     
-            # detect events
-            objs = find_events(S, f, t,
-                                event['Filter Size'], 
-                                FILT_PCTL, 
-                                event['Amplitude Threshold'], 
-                                event['Bandwidth Threshold'], 
-                                event['Duration Threshold'],
-                                event['Area Threshold'],
-                                [event['Min Frequency'], event['Max Frequency']]
             )
-            print(len(objs))
-            
-            if len(objs)>0:
-                
-                # bulk insert audio events to db
-                result = session.execute(
-        
-                    aeds.insert(),
-        
-                    [{'job_id': int(job_id),
-                      'recording_id': int(rec_ids[n]),
-                      'time_min': float(ob['t0']),
-                      'time_max': float(ob['t1']),
-                      'frequency_min': float(ob['f0']),
-                      'frequency_max': float(ob['f1']),
-                      'aed_number': int(c),
-                      'uri_image': image_uri+str(c)+'.png'
-                     }
-        
-                     for c, ob in enumerate(objs)]
-        
-                )
-                session.commit()
-        
-                # compute audio event features
-                compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix, image_dir, image_uri)
+            session.commit()
+    
+            # compute audio event features
+            compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix, image_dir, image_uri)
 
                     
-        except Exception as e:
-            print(e)
-            print('recording number: ',str(n))
-            print('recording: ',rec)
-            unprocessed+=1
+        # except Exception as e:
+        #     print(e)
+        #     print('recording number: ',str(n))
+        #     print('recording: ',rec)
+        #     unprocessed+=1
 
     # query for aed_ids
     print('mapping ids...')
