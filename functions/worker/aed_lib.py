@@ -151,7 +151,8 @@ def download_and_get_spec(uri, bucket, rec_dir, sr):
 
     # load 
     data, samplerate = read_audio(uri, rec_dir, sr)
-
+    print(samplerate)
+    
     # compute spectrogram
     f, t, S = _spectrogram(data, samplerate)
     S = np.log10((S+eps))
