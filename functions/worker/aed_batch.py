@@ -88,6 +88,7 @@ def handler(event, context):
                                 event['Area Threshold'],
                                 [event['Min Frequency'], event['Max Frequency']]
             )
+            print(len(objs))
             
             if len(objs)>0:
                 

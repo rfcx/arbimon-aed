@@ -67,13 +67,15 @@ def find_events(S, f, t, filt_size_factor, pctl, amp_thresh, bandwidth_thresh, d
     # find events
     labels, num_labels = scipy.ndimage.measurements.label(mask)
     objs = scipy.ndimage.measurements.find_objects(labels)
-    
+    print(len(objs))
+
     # filter events
     keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
                                             (t[objs[i][1].stop]-t[objs[i][1].start])>=duration_thresh and \
                                             (f[objs[i][0].stop]-f[objs[i][0].start])/1000*(t[objs[i][1].stop]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
-
+    print(len(objs))
+    
     objs = [
         {
             'f0': f[i[0].start],
