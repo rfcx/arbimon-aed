@@ -35,8 +35,7 @@ def find_events(S, f, t, filt_size_factor, pctl, amp_thresh, bandwidth_thresh, d
         area_thresh:            minimum AED area
         freq_range:             frequency range of interest
     Returns:
-        objs:                   objects storing coordinates of detected events
-        f:                      cropped frequency array
+        objs:                   list of dictionaries storing detection coordinates
     '''  
 
     # flatten
@@ -70,12 +69,21 @@ def find_events(S, f, t, filt_size_factor, pctl, amp_thresh, bandwidth_thresh, d
     objs = scipy.ndimage.measurements.find_objects(labels)
     
     # filter events
-    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop-1]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
-                                            (t[objs[i][1].stop-1]-t[objs[i][1].start])>=duration_thresh and \
-                                            (f[objs[i][0].stop-1]-f[objs[i][0].start])/1000*(t[objs[i][1].stop-1]-t[objs[i][1].start])>=area_thresh]
+    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
+                                            (t[objs[i][1].stop]-t[objs[i][1].start])>=duration_thresh and \
+                                            (f[objs[i][0].stop]-f[objs[i][0].start])/1000*(t[objs[i][1].stop]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
+
+    objs = [
+        {
+            'f0': f[i[0].start],
+            'f1': f[i[0].stop],
+            't0': t[i[0].start],
+            't1': t[i[0].stop]
+        }
+    ]
     
-    return objs, f
+    return objs
 
 
 def im_norm(x, trim=0.4):
@@ -90,11 +98,11 @@ def im_norm(x, trim=0.4):
     return (x-x.min())/(x.max()-x.min())*(1-trim)+(trim/2)
 
 
-def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
+def store_roi_images(S, f, t, objs, rec_id, worker_id, image_dir, image_uri):
     ''' Crops detection ROIs and uploads PNGs to S3
     Args:
         S:                      full spectrogram array
-        objs:                   objects storing coordinates of detected events
+        objs:                   list of event coordinate dictionaries
         rec_id:                 recording ID
         worker_id:              worker ID
         image_dir:              local directory for detection images
@@ -105,16 +113,17 @@ def store_roi_images(S, objs, rec_id, worker_id, image_dir, image_uri):
     shutil.rmtree(image_dir)
     os.makedirs(image_dir)
     for c, ob in enumerate(objs):
-        im = np.uint8(
-            im_norm(
-                -S[
-                    ob[0].start : (ob[0].stop+1), 
-                    ob[1].start : (ob[1].stop+1)
-                    ])*255
-                    )
+
+        f0idx = np.argmin(np.abs(f-ob['f0']))
+        f1idx = np.argmin(np.abs(f-ob['f1']))
+        t0idx = np.argmin(np.abs(t-ob['t0']))
+        t1idx = np.argmin(np.abs(t-ob['t1']))
+
+        im = np.uint8( im_norm( -S[f0idx: f1idx, t0idx: t1idx] ) * 255 )
         im = np.flipud(im)
         im = Image.fromarray(im).convert('RGB')
         im.save(image_dir+'/'+str(c)+'.png')
+
     fast_upload(boto3.Session(), os.environ['WRITEBUCKET'], image_uri, [image_dir+'/'+i for i in os.listdir(image_dir)])
 
 
@@ -151,7 +160,6 @@ def download_and_get_spec(uri, bucket, rec_dir, sr):
 
     # load 
     data, samplerate = read_audio(uri, rec_dir, sr)
-    print(samplerate)
     
     # compute spectrogram
     f, t, S = _spectrogram(data, samplerate)
@@ -183,7 +191,7 @@ def _spectrogram(x, fs, time_bin_size=0.02, freq_bin_size=50):
     return f, t, Sxx
     
     
-def compute_features(objs, rec_id, S, f, t, out_file_prefix):
+def compute_features(objs, rec_id, S, f, t, out_file_prefix, image_dir, image_uri):
     ''' Computes features from audio events for a single recording and appends to two local files
 
         <out_file_prefix>_features.npy
@@ -196,30 +204,53 @@ def compute_features(objs, rec_id, S, f, t, out_file_prefix):
         f:                      frequency array
         t:                      time array
         out_file_prefix:        path and prefix for output files
+        image_dir:              local directory for detection images
+        image_uri:              URI path for uploading image files            
     Returns:
     '''     
+
+    shutil.rmtree(image_dir)
+    os.makedirs(image_dir)
 
     block_features = np.zeros((len(objs), 581))
     block_ids = np.zeros((len(objs), 2))
     for c, ob in enumerate(objs):
-        roi = S[ob[0].start:ob[0].stop-1, ob[1].start:ob[1].stop-1]
-        roi = np.array(Image.fromarray(roi).resize((20, 20)))
-        features = hog(roi, orientations=9, pixels_per_cell=(4, 4), cells_per_block=(2, 2))
+
+        # get pixel coordinates
+        f0idx = np.argmin(np.abs(f-ob['f0']))
+        f1idx = np.argmin(np.abs(f-ob['f1']))
+        t0idx = np.argmin(np.abs(t-ob['t0']))
+        t1idx = np.argmin(np.abs(t-ob['t1']))
+        
+        # compute HOG features
+        roi = S[f0idx: f1idx, t0idx: t1idx]
+        roi_resized = np.array(Image.fromarray(roi).resize((20, 20)))
+        features = hog(roi_resized, orientations=9, pixels_per_cell=(4, 4), cells_per_block=(2, 2))
         block_features[c,:] = np.hstack([
-                                        np.array([f[ob[0].start],                  # low frequency
-                                                  f[ob[0].stop-1],                 # high frequency
-                                                  t[ob[1].start],                  # start time
-                                                  t[ob[1].stop-1],                 # end time
+                                        np.array([ob['f0'],                  # low frequency
+                                                  ob['f1'],                  # high frequency
+                                                  ob['t0'],                  # start time
+                                                  ob['t1'],                  # end time
                                                   rec_id,
                                                  ]),
                                         features
                                 ])
         block_ids[c,:] = [rec_id, c] # recording_id and aed_number
+
+        # save PNG
+        im = np.uint8( im_norm( -roi ) * 255 )
+        im = np.flipud(im)
+        im = Image.fromarray(im).convert('RGB')
+        im.save(image_dir+'/'+str(c)+'.png')
         
+    # append features to numpy files
     npaa = NpyAppendArray(out_file_prefix+'_features.npy')
     npaa.append(block_features)                    
     npab = NpyAppendArray(out_file_prefix+'_ids.npy')
     npab.append(block_ids)       
+
+    # upload detection PNGs
+    fast_upload(boto3.Session(), os.environ['WRITEBUCKET'], image_uri, [image_dir+'/'+i for i in os.listdir(image_dir)])
 
 
 def band_flatten(X):

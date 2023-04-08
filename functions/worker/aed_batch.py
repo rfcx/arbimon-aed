@@ -79,7 +79,7 @@ def handler(event, context):
             f, t, S = download_and_get_spec(rec, os.environ['RECBUCKET'], rec_dir, rec_srs[n]);
     
             # detect events
-            objs, f = find_events(S, f, t,
+            objs = find_events(S, f, t,
                                 event['Filter Size'], 
                                 FILT_PCTL, 
                                 event['Amplitude Threshold'], 
@@ -98,10 +98,10 @@ def handler(event, context):
         
                     [{'job_id': int(job_id),
                       'recording_id': int(rec_ids[n]),
-                      'time_min': float(t[ob[1].start]),
-                      'time_max': float(t[ob[1].stop-1]),
-                      'frequency_min': float(f[ob[0].start]),
-                      'frequency_max': float(f[ob[0].stop-1]),
+                      'time_min': float(ob['t0']),
+                      'time_max': float(ob['t1']),
+                      'frequency_min': float(ob['f0']),
+                      'frequency_max': float(ob['f1']),
                       'aed_number': int(c),
                       'uri_image': image_uri+str(c)+'.png'
                      }
@@ -112,10 +112,8 @@ def handler(event, context):
                 session.commit()
         
                 # compute audio event features
-                compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix)
-        
-                # store roi images
-                store_roi_images(S, objs, rec_ids[n], worker_id, image_dir, image_uri)
+                compute_features(objs, rec_ids[n], S, f, t, feature_file_prefix, image_dir, image_uri)
+
                     
         except Exception as e:
             print(e)
