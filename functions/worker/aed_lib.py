@@ -75,14 +75,15 @@ def find_events(S, f, t, filt_size_factor, pctl, amp_thresh, bandwidth_thresh, d
                                             (f[objs[i][0].stop]-f[objs[i][0].start])/1000*(t[objs[i][1].stop]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
     print(len(objs))
-    
+
     objs = [
         {
             'f0': f[i[0].start],
             'f1': f[i[0].stop],
-            't0': t[i[0].start],
-            't1': t[i[0].stop]
-        }
+            't0': t[i[1].start],
+            't1': t[i[1].stop]
+        } 
+        for i in objs
     ]
     
     return objs
