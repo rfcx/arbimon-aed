@@ -70,18 +70,18 @@ def find_events(S, f, t, filt_size_factor, pctl, amp_thresh, bandwidth_thresh, d
     print(len(objs))
 
     # filter events
-    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
-                                            (t[objs[i][1].stop]-t[objs[i][1].start])>=duration_thresh and \
-                                            (f[objs[i][0].stop]-f[objs[i][0].start])/1000*(t[objs[i][1].stop]-t[objs[i][1].start])>=area_thresh]
+    keeps = [i for i in range(len(objs)) if (f[objs[i][0].stop-1]-f[objs[i][0].start])>=bandwidth_thresh*1000 and \
+                                            (t[objs[i][1].stop-1]-t[objs[i][1].start])>=duration_thresh and \
+                                            (f[objs[i][0].stop-1]-f[objs[i][0].start])/1000*(t[objs[i][1].stop-1]-t[objs[i][1].start])>=area_thresh]
     objs = [objs[i] for i in keeps]
     print(len(objs))
 
     objs = [
         {
             'f0': f[i[0].start],
-            'f1': f[i[0].stop],
+            'f1': f[i[0].stop-1],
             't0': t[i[1].start],
-            't1': t[i[1].stop]
+            't1': t[i[1].stop-1]
         } 
         for i in objs
     ]
