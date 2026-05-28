@@ -1,0 +1,18 @@
+# rfcx-local CD: build the standalone AED worker image and push it to the
+# in-cluster registry. AED runs as Jobs spawned by the jobqueue-dispatcher,
+# which references the rfcx-local-prod-latest tag, so a build is all that's
+# needed. Triggers on main push. (AWS SAM, if any, is unaffected.)
+name: CD (rfcx-local)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-rfcx-local:
+    uses: rfcx/cicd/.github/workflows/rfcx-local-worker-cd.yaml@master
+    with:
+      dockerfile: Dockerfile
+      image: aed
+      repo: arbimon-aed
