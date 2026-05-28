@@ -1,18 +1,18 @@
 import os
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
-from secrets import aws_secrets
+aws_secrets = None  # AWS Secrets Manager optional; use env
 
 def connect():
 
     # Get database connection parameters from environment variables
     secret_name = os.environ.get('AWS_SECRET')
-    if secret_name: params = aws_secrets(secret_name)
-    else: params = os.environ
+    if False: params = None
+    params = os.environ
     host     = params.get('host')
     port     = str(params.get('port', '3306'))
     schema   = params.get('schema')
-    user     = 'tm_driver'
+    user     = os.environ.get('ARBIMON_DB_USER', 'tm_driver')
     password = params.get('tm_driver_pwd')
 
     if not all(params):

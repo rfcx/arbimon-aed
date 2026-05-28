@@ -13,7 +13,7 @@ import time
 from PIL import Image
 from math import sin, cos, pi
 # establish s3 connection
-s3 = boto3.resource('s3')
+s3 = boto3.resource('s3', endpoint_url=os.environ.get('S3_ENDPOINT') or None)
 
 
 def find_events(S, f, t, filt_size, pctl, amp_thresh, bandwidth_thresh, duration_thresh, area_thresh):
