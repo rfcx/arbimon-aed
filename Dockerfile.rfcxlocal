@@ -1,0 +1,42 @@
+# rfcx-local Audio Event Detection (clustering) worker.
+# Phase D-ANALYSIS, job_type_id 8. Build context = arbimon-aed repo root.
+#
+# Builds the upstream rfcx/arbimon-aed worker (functions/worker) into a
+# standalone AWS-free container that processes one job_id end-to-end
+# (conductor + worker combined; see aed_run_job.py).
+#
+# De-AWS build patches (minimal + auditable):
+#   - aed_lib.py: boto3.resource('s3') -> honor S3_ENDPOINT (s3-proxy).
+#   - db.py: env-driven DB user (ARBIMON_DB_USER) instead of hardcoded
+#     'tm_driver'; already falls back to env when AWS_SECRET unset.
+#   - remove worker secrets.py (AWS Secrets Manager helper) which shadows
+#     Python's stdlib `secrets` (numpy imports it -> randbits ImportError).
+FROM python:3.8-slim AS aed-worker
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libsndfile1 ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+# numpy<1.24 to match the era of the legacy numerical code (parity); scipy
+# + scikit-image pinned compatibly.
+RUN pip install --no-cache-dir \
+      numpy==1.22.4 scipy==1.8.1 scikit-image==0.19.3 soundfile==0.12.1 \
+      sqlalchemy==1.4.52 mysql-connector-python==8.1.0 boto3==1.28.71
+
+WORKDIR /app
+COPY functions/worker/ /app/
+
+# --- de-AWS patches ---
+RUN sed -i "s#^s3 = boto3.resource('s3')#import os as _os\ns3 = boto3.resource('s3', endpoint_url=_os.environ.get('S3_ENDPOINT') or None)#" aed_lib.py
+RUN sed -i "s#    user     = 'tm_driver'#    user     = os.environ.get('ARBIMON_DB_USER', 'tm_driver')#" db.py
+RUN sed -i 's@^from secrets import aws_secrets@aws_secrets = None@' db.py && \
+    rm -f secrets.py
+# db.py keys on AWS_SECRET to choose AWS Secrets Manager; but the AED worker
+# ALSO uses AWS_SECRET for S3 key paths. We removed the SM helper, so force
+# db.py to always read connection params from env regardless of AWS_SECRET.
+RUN sed -i 's@    if secret_name: params = aws_secrets(secret_name)@    if False: params = None@' db.py && \
+    sed -i 's@    else: params = os.environ@    params = os.environ@' db.py
+
+COPY aed_run_job.py /app/aed_run_job.py
+
+ENTRYPOINT ["python3", "/app/aed_run_job.py"]

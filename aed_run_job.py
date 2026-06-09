@@ -93,8 +93,40 @@ def main(job_id):
     rec_dts_raw = [r[2] for r in rec_rows]
     total = len(rec_ids)
     print(f"playlist has {total} recordings")
+    # Sharding across WORKER_COUNT parallel pods (idx % count == index).
+    worker_index = int(os.environ.get("WORKER_INDEX", os.environ.get("JOB_COMPLETION_INDEX", "0")))
+    worker_count = max(1, int(os.environ.get("WORKER_COUNT", "1")))
+    my_idxs = list(range(worker_index, total, worker_count))
+    print(f"shard {worker_index}/{worker_count}: {len(my_idxs)} of {total} recordings")
+    # Idempotency: a retried/re-run shard must not duplicate detection rows
+    # (the worker inserts without delete-first; a k8s pod retry or an
+    # operator re-run would otherwise double them). Clear ONLY this shard's
+    # own recordings' rows for this job_id -> disjoint per shard, so a
+    # single-index retry can never wipe another shard's detections. Detection
+    # PNGs in S3 are overwritten by the same per-(rec,aed_number) key, so no
+    # orphan images result.
+    my_rec_ids = [int(rec_ids[n]) for n in my_idxs]
+    if my_rec_ids:
+        existing = session.execute(
+            sqal.select([aeds.c.aed_id]).where(sqal.and_(
+                aeds.c.job_id == job_id, aeds.c.recording_id.in_(my_rec_ids)))).fetchall()
+        if existing:
+            ex_ids = [int(r[0]) for r in existing]
+            session.execute(playlist_aed.delete().where(playlist_aed.c.aed_id.in_(ex_ids)))
+            session.execute(aeds.delete().where(sqal.and_(
+                aeds.c.job_id == job_id, aeds.c.recording_id.in_(my_rec_ids))))
+            session.commit()
+            print(f"idempotent reset: shard {worker_index} cleared "
+                  f"{len(ex_ids)} prior detections")
+    # Stagger shard startup to avoid a thundering herd on the s3 proxy.
+    if worker_count > 1:
+        import time as _t0
+        _t0.sleep(min(45, worker_index * 1.5))
+    # Every shard sets progress_steps to the true total (idempotent) so the
+    # finalize check (progress>=steps) can't fire prematurely when a shard
+    # is delayed. progress accumulates via atomic increments from creation.
     session.execute(jobs.update().where(jobs.c.job_id == job_id).values(
-        progress=0, progress_steps=max(total, 1)))
+        progress_steps=max(total, 1)))
     session.commit()
 
     # datetime -> unit circle (None-safe; many recs have 0000-00-00 -> None)
@@ -106,14 +138,17 @@ def main(job_id):
     _fresh()
     rec_dir = TEMP_DIR + "/recordings/"
     image_dir = TEMP_DIR + "/images"
-    feature_prefix = TEMP_DIR + "/" + str(job_id) + "_0"
+    feature_prefix = TEMP_DIR + "/" + str(job_id) + "_" + str(worker_index)
     recbucket = os.environ.get("RECBUCKET", "rfcx-streams-production")
     writebucket = os.environ.get("WRITEBUCKET", "arbimon2")
     env = os.environ.get("AWS_SECRET", "prod").lower()
 
     unprocessed = 0
     any_features = False
-    for n, rec in enumerate(rec_uris):
+    processed = 0
+    for n in my_idxs:
+        rec = rec_uris[n]
+        processed += 1
         try:
             image_uri = f"audio_events/{env}/detection/{job_id}/png/{rec_ids[n]}/"
             os.makedirs(image_dir + "/" + str(rec_ids[n]), exist_ok=True)
@@ -124,7 +159,7 @@ def main(job_id):
                     'job_id': int(job_id), 'recording_id': int(rec_ids[n]),
                     'time_min': float(t[ob[1].start]), 'time_max': float(t[ob[1].stop - 1]),
                     'frequency_min': float(f[ob[0].start]), 'frequency_max': float(f[ob[0].stop - 1]),
-                    'aed_number': int(c), 'uri_image': image_uri + str(c) + '.png',
+                    'aed_number': int(c), 'uri_param': int(c), 'uri_vector': '',
                 } for c, ob in enumerate(objs)])
                 session.commit()
                 compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_prefix)
@@ -135,7 +170,7 @@ def main(job_id):
             unprocessed += 1
         finally:
             session.execute(jobs.update().where(jobs.c.job_id == job_id).values(
-                progress=n + 1, last_update=dt.datetime.now()))
+                progress=jobs.c.progress + 1, last_update=dt.datetime.now()))
             session.commit()
 
     # map aed_ids + write playlist_aed + upload feature files (only if any)
@@ -152,21 +187,39 @@ def main(job_id):
             session.execute(playlist_aed.insert(),
                             [{'playlist_id': plist_id, 'aed_id': a} for a in aed_ids])
             session.commit()
+        # per-shard feature files keyed by worker_index
         for suffix in ("_features.npy", "_ids.npy"):
             fp = feature_prefix + suffix
             if os.path.exists(fp):
                 s3.Bucket(writebucket).upload_file(
-                    fp, f"audio_events/{env}/detection/{job_id}/{job_id}_0{suffix}")
+                    fp, f"audio_events/{env}/detection/{job_id}/{job_id}_{worker_index}{suffix}")
 
+    # Exit semantics are PER-SHARD (Indexed Job: every index must succeed for
+    # the Job to be Complete). A shard succeeds when ITS OWN failure rate is
+    # acceptable; global job completion is handled by (a) progress reaching
+    # progress_steps and (b) the jobs_BEFORE_UPDATE trigger which auto-sets
+    # state='completed' once progress>=progress_steps. So we MUST NOT make a
+    # shard's exit code depend on whether it was the one to flip global state
+    # (the trigger usually wins, leaving our explicit finalize a 0-row no-op).
     state = 'completed'
-    remark = None
-    if total and unprocessed / total >= 0.5:
+    if processed and unprocessed / processed >= 0.5:
+        session.execute(jobs.update().where(sqal.and_(
+            jobs.c.job_id == job_id, jobs.c.state == 'processing')).values(
+            state='error', completed=-1,
+            remarks=f"shard {worker_index}: {round(unprocessed*100/processed)}% unprocessed",
+            last_update=dt.datetime.now()))
+        session.commit()
         state = 'error'
-        remark = f"{round(unprocessed*100/total)}% of recordings could not be processed"
-    session.execute(jobs.update().where(jobs.c.job_id == job_id).values(
-        state=state, completed=(1 if state == 'completed' else -1),
-        progress=max(total, 1), remarks=remark, last_update=dt.datetime.now()))
-    session.commit()
+    else:
+        # Best-effort explicit finalize (no-op if the trigger already fired).
+        session.execute(jobs.update().where(sqal.and_(
+            jobs.c.job_id == job_id,
+            jobs.c.progress >= jobs.c.progress_steps,
+            jobs.c.state == 'processing')).values(
+            state='completed', last_update=dt.datetime.now()))
+        session.commit()
+        print(f"AED job {job_id} shard {worker_index} OK "
+              f"({processed} processed, {unprocessed} unprocessed)")
     session.close()
     engine.dispose()
     print(f"AED job {job_id} {state}: total={total} unprocessed={unprocessed}")
