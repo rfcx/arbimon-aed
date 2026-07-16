@@ -104,7 +104,17 @@ def handler(event, context):
                       'frequency_min': float(f[ob[0].start]),
                       'frequency_max': float(f[ob[0].stop-1]),
                       'aed_number': int(c),
-                      'uri_image': image_uri+str(c)+'.png'
+                      # mysql2pg BLOCKER B1 fix (2026-07-16 adversarial review):
+                      # the real column is uri_vector (varchar NOT NULL, no
+                      # default) on BOTH engines; there is no uri_image column.
+                      # SQLAlchemy silently DROPPED the bogus uri_image key AND
+                      # omitted uri_vector -> on MariaDB (blank/non-strict
+                      # sql_mode) uri_vector was auto-filled '' (live rows
+                      # confirm), but on PostgreSQL it raises NotNullViolation.
+                      # Writing '' here is byte-identical to today's MySQL rows.
+                      # (The frontend rebuilds the PNG URL from
+                      # job_id/recording_id/aed_number, not from a DB column.)
+                      'uri_vector': ''
                      }
         
                      for c, ob in enumerate(objs)]
