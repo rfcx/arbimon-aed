@@ -18,7 +18,8 @@ RUN apt-get update && \
 
 RUN pip install --no-cache-dir \
       numpy==1.22.4 scipy==1.8.1 scikit-image==0.19.3 soundfile==0.12.1 \
-      sqlalchemy==1.4.52 mysql-connector-python==8.1.0 boto3==1.28.71
+      sqlalchemy==1.4.52 mysql-connector-python==8.1.0 boto3==1.28.71 \
+      psycopg2-binary==2.9.9
 
 WORKDIR /app
 COPY functions/worker/ /app/
