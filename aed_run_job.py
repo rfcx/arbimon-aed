@@ -124,7 +124,12 @@ def main(job_id):
                     'job_id': int(job_id), 'recording_id': int(rec_ids[n]),
                     'time_min': float(t[ob[1].start]), 'time_max': float(t[ob[1].stop - 1]),
                     'frequency_min': float(f[ob[0].start]), 'frequency_max': float(f[ob[0].stop - 1]),
-                    'aed_number': int(c), 'uri_vector': '',  # mysql2pg B1: real NOT-NULL col (was phantom uri_image)
+                    # uri_vector: mysql2pg B1, real NOT-NULL col (was phantom uri_image).
+                    # uri_param: the clustering UI builds the ROI PNG URL from
+                    # this column (CONCAT ... uri_param, '.png'); PNGs are keyed
+                    # by aed_number, so uri_param = aed_number. NULL => blank
+                    # ROI grid (2026-07-18 user-reported regression fix).
+                    'aed_number': int(c), 'uri_vector': '', 'uri_param': int(c),
                 } for c, ob in enumerate(objs)])
                 session.commit()
                 compute_features(objs, rec_ids[n], rec_dts[n], S, f, t, feature_prefix)

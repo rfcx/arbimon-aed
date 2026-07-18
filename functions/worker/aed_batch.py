@@ -112,9 +112,18 @@ def handler(event, context):
                       # sql_mode) uri_vector was auto-filled '' (live rows
                       # confirm), but on PostgreSQL it raises NotNullViolation.
                       # Writing '' here is byte-identical to today's MySQL rows.
-                      # (The frontend rebuilds the PNG URL from
-                      # job_id/recording_id/aed_number, not from a DB column.)
-                      'uri_vector': ''
+                      'uri_vector': '',
+                      # 2026-07-18 blank-ROI fix: the arbimon-legacy clustering
+                      # grid builds the ROI PNG URL from the uri_param COLUMN
+                      # (findRois: CONCAT('audio_events/<env>/detection/',
+                      # job_id, '/png/', recording_id, '/', uri_param, '.png')).
+                      # Omitting it => NULL => .../null.png => blank spectrogram
+                      # grid (user-reported; jobs 167492..167911 backfilled).
+                      # store_roi_images uploads PNGs keyed by the enumerate
+                      # index == aed_number, so uri_param must equal aed_number
+                      # (verified: all pre-regression rows have
+                      # uri_param == aed_number, 0 mismatches).
+                      'uri_param': int(c)
                      }
         
                      for c, ob in enumerate(objs)]
